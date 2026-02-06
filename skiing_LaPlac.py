@@ -3,81 +3,69 @@ import numpy as np
 from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 
-# importing dataset
+# options
+#plot_mode = 'unweighted'  # options: 'unweighted', 'weighted', 'both'
+plot_mode = 'weighted'  # options: 'unweighted', 'weighted', 'both'
+#plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
+# Load dataset
 skiing = pd.read_excel('skiing_dist.xlsx', index_col=0)
-
-print(skiing.head())   # first 5 rows
-print(skiing.shape)    # (rows, columns)
-print(skiing.columns)  # column names
-
-# distance matrix
 Dist = skiing.to_numpy(dtype=float)
-
-# labels (ski resort names in this case!)
 labels = skiing.index.to_numpy()
-
-print("Shape:", Dist.shape)
-
-k = 3
-
-# sort distances row-wise
-neighbors = np.argsort(Dist, axis=1)[:, 1:k+1]
-# neighbhors gives the indices
-
-print("\nK nearest neighbors:")
-for i, nbrs in enumerate(neighbors):
-    print(labels[i], "->", labels[nbrs])
-
 n = Dist.shape[0]
 
-# building adjacency matrix
+k = 3
+T = 5000
+
+# Knn
+neighbors = np.argsort(Dist, axis=1)[:, 1:k+1]
 A = np.zeros((n, n))
-
 for i in range(n):
-    A[i, neighbors[i,:]] = 1
-
-# make symmetric (add relations both way)
+    A[i, neighbors[i]] = 1
 A = np.maximum(A, A.T)
+Deg_A = np.diag(np.sum(A, axis=0))
 
-# creating Degree matrix
-row_sum = np.sum(A, axis=1)
-Deg = np.diag(row_sum)
+# weighted adjacency
+W = np.exp(-Dist**2 / T) * A
+Deg_W = np.diag(np.sum(W, axis=0))
 
-def compute_weight_adj(A, Dist, T=5000):
-    W = np.exp(-1 *Dist**2 / T ) * A
-    return W
-W = compute_weight_adj(A, Dist)
-print(W)
-# computing weight LaPlacian
-L = Deg - W
-print(L)
+# Laplac
+L_A = Deg_A - A
+L_W = Deg_W - W
 
-# get evals, evecs
-eigvals, eigvecs = eigh(L, Deg)
+# genearlaized eigen decomp
+eigvals_A, eigvecs_A = eigh(L_A, Deg_A)
+eigvals_W, eigvecs_W = eigh(L_W, Deg_W)
 
-#  Sort eigenvalues and eigenvectors in ascending order
-idx = np.argsort(eigvals)       # indices that sort eigvals
-eigvals = eigvals[idx]         # sorted eigenvalues
-eigvecs = eigvecs[:, idx]
-print(eigvals)
+# Sorting evals for both cases
+idx_A = np.argsort(eigvals_A)
+eigvals_A, eigvecs_A = eigvals_A[idx_A], eigvecs_A[:, idx_A]
+idx_W = np.argsort(eigvals_W)
+eigvals_W, eigvecs_W = eigvals_W[idx_W], eigvecs_W[:, idx_W]
+print('Checking smallest eigenvalues')
+print(np.min(eigvals_A), np.min(eigvals_W))
 
-# 2D embedding
-embedding_2D = eigvecs[:, 1:3]
+# 2D embeddings
+embedding_A = eigvecs_A[:, 1:3]
+embedding_W = eigvecs_W[:, 1:3]
 
+# Plotting (thanks CHATGPT)
 plt.figure(figsize=(8,6))
-plt.scatter(embedding_2D[:, 0], embedding_2D[:, 1], color='blue')
 
-# add labels (thanks CHATGPT)
+if plot_mode == 'unweighted' or plot_mode == 'both':
+    plt.scatter(embedding_A[:,0], embedding_A[:,1], color='red', label='Unweighted', s=60)
+if plot_mode == 'weighted' or plot_mode == 'both':
+    plt.scatter(embedding_W[:,0], embedding_W[:,1], color='blue', label='Weighted', s=60, marker='v')
+
+# Add labels for clarity (use unweighted as reference)
 for i, label in enumerate(labels):
-    plt.text(embedding_2D[i, 0] + 0.01,  # small offset
-             embedding_2D[i, 1] + 0.01,
-             label,
-             fontsize=9)
+    if plot_mode == 'unweighted' or plot_mode == 'both':
+        plt.text(embedding_A[i,0]+0.01, embedding_A[i,1]+0.01, label, fontsize=9)
+    if plot_mode == 'weighted' or plot_mode == 'both':
+        plt.text(embedding_W[i,0]+0.01, embedding_W[i,1]+0.01, label, fontsize=9)
 
-plt.xlabel("Eigenvector 2")
-plt.ylabel("Eigenvector 3")
-plt.title(f'2D Laplacian Eigenmap of Ski Resorts ({k} neighbors)')
+plt.xlabel('Eigenvector 2')
+plt.ylabel('Eigenvector 3')
+plt.title(f'2D Laplacian Eigenmap ({k}-NN)')
+plt.legend()
 plt.grid(True)
 plt.show()
-print(eigvecs.shape)
-
