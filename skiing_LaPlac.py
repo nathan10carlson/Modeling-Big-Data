@@ -56,8 +56,8 @@ print(L)
 eigvals, eigvecs = eigh(L, Deg)
 
 #  Sort eigenvalues and eigenvectors in ascending order
-idx = np.argsort(eigvals)          # indices that would sort eigvals
-eigvals = eigvals[idx]              # sorted eigenvalues
+idx = np.argsort(eigvals)       # indices that sort eigvals
+eigvals = eigvals[idx]         # sorted eigenvalues
 eigvecs = eigvecs[:, idx]
 print(eigvals)
 
@@ -67,7 +67,7 @@ embedding_2D = eigvecs[:, 1:3]
 plt.figure(figsize=(8,6))
 plt.scatter(embedding_2D[:, 0], embedding_2D[:, 1], color='blue')
 
-# add labels
+# add labels (thanks CHATGPT)
 for i, label in enumerate(labels):
     plt.text(embedding_2D[i, 0] + 0.01,  # small offset
              embedding_2D[i, 1] + 0.01,
