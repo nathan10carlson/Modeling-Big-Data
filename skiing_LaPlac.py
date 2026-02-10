@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 
 # options
 #plot_mode = 'unweighted'  # options: 'unweighted', 'weighted', 'both'
-plot_mode = 'weighted'  # options: 'unweighted', 'weighted', 'both'
+plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
 #plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
 # Load dataset
-skiing = pd.read_excel('skiing_dist.xlsx', index_col=0)
+skiing = pd.read_excel('data/skiing_dist.xlsx', index_col=0)
 Dist = skiing.to_numpy(dtype=float)
 labels = skiing.index.to_numpy()
+
 n = Dist.shape[0]
 
 k = 3
@@ -30,6 +31,8 @@ Deg_W = np.diag(np.sum(W, axis=0))
 
 # Laplac
 L_A = Deg_A - A
+print(L_A)
+print('this is L_A')
 L_W = Deg_W - W
 
 # genearlaized eigen decomp

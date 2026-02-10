@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eigh
+import pandas as pd
 from scipy.spatial.distance import squareform
 
 # ===============================
@@ -13,8 +14,14 @@ from scipy.spatial.distance import squareform
 # DM = squareform(dissimilarities)
 
 # For demonstration, let's make a dummy 10x10 distance matrix
-DM = np.random.rand(10, 10)
-DM = (DM + DM.T)/2  # make symmetric
+skiing = pd.read_excel('data/skiing_dist.xlsx', index_col=0)
+Dist = skiing.to_numpy(dtype=float)
+labels = skiing.index.to_numpy()
+n = Dist.shape[0]
+DM = Dist
+
+#DM = np.random.rand(10, 10)
+#DM = (DM + DM.T)/2  # make symmetric
 np.fill_diagonal(DM, 0)
 
 n = DM.shape[0]
@@ -27,8 +34,8 @@ W = np.zeros((n, n))      # weighted adjacency
 D = np.zeros((n, n))      # degree for adjacency
 DW = np.zeros((n, n))     # degree for weighted adjacency
 
-T = 1e8       # scaling for weights
-K = 9         # number of nearest neighbors
+T = 5000      # scaling for weights
+K = 3         # number of nearest neighbors
 
 # ===============================
 # 3️⃣ Compute adjacency (K-nearest neighbors, symmetric)
