@@ -40,6 +40,11 @@ for i in range(len(eigvals)):
         d += 1
 print(f'There are {d} positive-non-zero eigenvals')
 
+# only taking positve eigenvalue/vec pairs
+tol = 1e-9
+pos = eigvals > tol
+eigvals = eigvals[pos]
+eigvecs = eigvecs[:, pos]
 # constructing eigen decomp
 Lambda = np.diag(eigvals)
 V = eigvecs.copy()
@@ -66,7 +71,8 @@ plt.figure(figsize=(8,6))
 plt.scatter(V_tilde[0,:], V_tilde[1,:], color='blue')
 
 for i, label in enumerate(labels):
-    plt.text(V_tilde[0, i] + 0.01, V_tilde[1, i] + 0.01, label, fontsize=9)
+    offset = 2.5
+    plt.text(V_tilde[0, i] + offset, V_tilde[1, i] + offset, label, fontsize=9)
 
 plt.xlabel("Dimension 1")
 plt.ylabel("Dimension 2")

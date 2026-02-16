@@ -4,11 +4,13 @@ from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 
 data = loadmat("/Users/nathancarlson/Desktop/programs/MATH 532/data/cat_dogs.mat")
+data = data["Y"]
+data =data.astype(np.float64)/255
 ## 4096 X 198
-print(data["Y"].shape)
-
+print(data.shape)
+plot_mode = 'weighted'
 # adding labels!
-n_samples = data["Y"].shape[1]  # 198
+n_samples = data.shape[1]  # 198
 n_cats = n_samples // 2          # 99
 n_dogs = n_samples - n_cats      # 99
 
@@ -39,12 +41,14 @@ def distmat(X, method='2norm'):
     return D
 
 
-Dist = distmat(data["Y"], method='2norm')
+Dist = distmat(data, method='2norm')
+Dist = Dist.astype(np.float64)/255
 
 n = Dist.shape[0]
 
-k = 20
+k = 100
 T = np.median(Dist)**2
+#T = 5000
 
 # Knn
 neighbors = np.argsort(Dist, axis=1)[:, 1:k+1]
@@ -53,6 +57,7 @@ for i in range(n):
     A[i, neighbors[i]] = 1
 A = np.maximum(A, A.T)
 Deg_A = np.diag(np.sum(A, axis=0))
+
 
 # weighted adjacency
 W = np.exp(-Dist**2 / T) * A
@@ -69,6 +74,7 @@ print("Zero degree nodes:", np.sum(np.diag(Deg_A) == 0))
 eigvals_A, eigvecs_A = eigh(L_A, Deg_A)
 eigvals_W, eigvecs_W = eigh(L_W, Deg_W)
 
+
 # Sorting evals for both cases
 idx_A = np.argsort(eigvals_A)
 eigvals_A, eigvecs_A = eigvals_A[idx_A], eigvecs_A[:, idx_A]
@@ -83,20 +89,54 @@ embedding_W = eigvecs_W[:, 1:3]
 
 # Plotting (thanks CHATGPT)
 plt.figure(figsize=(8,6))
-plot_mode = 'weighted'
+
+cats = true_labels == 0
+dogs = true_labels == 1
 if plot_mode == 'unweighted' or plot_mode == 'both':
-    plt.scatter(embedding_A[:,0], embedding_A[:,1], color='red', label='Unweighted', s=60)
+    plt.scatter(embedding_A[cats,0], embedding_A[cats,1], marker='o', label='Cats (Unweighted)')
+    plt.scatter(embedding_A[dogs,0], embedding_A[dogs,1], marker='x', label='Dogs (Unweighted)')
+
 if plot_mode == 'weighted' or plot_mode == 'both':
-    plt.scatter(embedding_W[:,0], embedding_W[:,1], color='blue', label='Weighted', s=60, marker='v')
+    plt.scatter(embedding_W[cats,0], embedding_W[cats,1], marker='o', label='Cats (Weighted)')
+    plt.scatter(embedding_W[dogs,0], embedding_W[dogs,1], marker='x', label='Dogs (Weighted)')
+
+plt.xlabel("Dimension 1")
+plt.ylabel("Dimension 2")
+plt.title("2D Laplacian Eigenmaps")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
+plt.figure(figsize=(8,6))
+
+cats = true_labels == 0
+dogs = true_labels == 1
+
+if plot_mode == 'unweighted' or plot_mode == 'both':
+    # Using subset lengths (0…n_cats-1, 0…n_dogs-1)
+    plt.scatter(range(embedding_A[cats].shape[0]), embedding_A[cats,0], marker='o', label='Cats (Unweighted)')
+    plt.scatter(range(embedding_A[dogs].shape[0]), embedding_A[dogs,0], marker='x', label='Dogs (Unweighted)')
+if plot_mode == 'weighted' or plot_mode == 'both':
+    # Cats
+    plt.scatter(range(embedding_W[cats].shape[0]), embedding_W[cats, 0], marker='o', label='Cats (Weighted)')
+    # Dogs
+    plt.scatter(range(embedding_W[dogs].shape[0]), embedding_W[dogs, 0], marker='x', label='Dogs (Weighted)')
+plt.xlabel("Image Index")
+plt.ylabel("Fiedler Embedding")
+plt.title("Fiedler Vector Embedding")
+plt.legend()
+plt.grid(True)
 plt.show()
 
 # Fiedler vector
-fiedler = eigvecs_W[:,2]
+fiedler = eigvecs_W[:,1]
 print('Max fiedler is')
 print(np.max(fiedler))
 print('Min. fiedler is')
 print(np.min(fiedler))
-threshold_range = np.linspace(np.min(fiedler), np.max(fiedler), 10000)
+
+threshold_range = np.linspace(np.min(fiedler), np.max(fiedler), 100)
 accuracy_log = np.zeros(len(threshold_range))
 i=0 # counter
 for threshold in threshold_range:
@@ -109,6 +149,12 @@ for threshold in threshold_range:
     accuracy_log[i] = accuracy
     i += 1
 print("Fiedler cut accuracy (% of correct labels):", np.max(accuracy_log) * 100)
+print(np.where(accuracy_log == np.max(accuracy_log)))
+print(np.linspace(np.min(fiedler), np.max(fiedler), 100)[np.where(accuracy_log == np.max(accuracy_log))])
+
+
+
+# this function creates a figure with a few random cat images. From C(h)atGPT
 
 def plot_sample_images_grid(X, labels=None, n_rows=3, n_cols=5, img_shape=(64, 64), cmap='gray'):
     """
@@ -139,4 +185,4 @@ def plot_sample_images_grid(X, labels=None, n_rows=3, n_cols=5, img_shape=(64, 6
     plt.tight_layout()
     plt.show()
 # ---------------- Example Usage ----------------
-plot_sample_images_grid(data["Y"], labels=true_labels, n_rows=3, n_cols=5)
+plot_sample_images_grid(data, labels=true_labels, n_rows=3, n_cols=5)

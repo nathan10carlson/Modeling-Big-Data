@@ -1,17 +1,15 @@
 import numpy as np
-
 # Incidence matrix Q
 Q = np.array([
-    [ 1,  0,  1,  0,  0, -1],
+    [ 1,  0,  0,  0,  0, -1],
     [ 0,  1,  0,  0,  0,  0],
     [-1,  0,  0,  0,  0,  0],
     [ 0, -1,  1,  1,  0,  0],
     [ 0,  0, -1,  0,  1,  0],
     [ 0,  0,  0, -1, -1,  0],
-    [ 0,  0,  0,  0,  0,  1]
-])
+    [ 0,  0,  0,  0,  0,  1]])
 
-# Compute the rank
+# Compute the rank of Q
 rank_Q = np.linalg.matrix_rank(Q)
 print("Rank of Q:", rank_Q)
 

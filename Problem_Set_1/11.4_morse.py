@@ -1,21 +1,46 @@
+from scipy.io import loadmat
 import pandas as pd
 import numpy as np
-from scipy.linalg import eigh
 import matplotlib.pyplot as plt
+from scipy.linalg import eigh
+import string
+
+k = 2
+T = 10000
 
 # options
-#plot_mode = 'unweighted'  # options: 'unweighted', 'weighted', 'both'
-plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
+plot_mode = 'weighted'  # options: 'unweighted', 'weighted', 'both'
 #plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
-# Load dataset
-skiing = pd.read_excel('data/skiing_dist.xlsx', index_col=0)
-Dist = skiing.to_numpy(dtype=float)
-labels = skiing.index.to_numpy()
-print(Dist)
+#plot_mode = 'both'  # options: 'unweighted', 'weighted', 'both'
+
+
+# Extract the distance matrix (as numpy array)
+#matrix = data['dissMatrix']  # replace with your actual variable name
+# Slice to get only the first 26 rows and columns (A-Z)
+# Define the matrix
+Dist = np.array([
+    [0., 177, 177, 166, 188],
+    [177, 0, 96, 79, 166],
+    [177, 96, 0, 144, 177],
+    [166, 79, 144, 0, 177],
+    [188, 166, 177, 177, 0]
+])
+##Generating labesl
+# Letters A-Z
+import string
+# Get labels A-E
+labels = list(string.ascii_lowercase[:5])
+print(labels)
+
+
+# Convert to DataFrame, skipping the first row/column if they are just indices
+# Assuming the first row and first column are index numbers
+#Dist = pd.DataFrame(matrix_letters[0:, 0:])
+
+
 n = Dist.shape[0]
 
-k = 5
-T = 5000
+
 
 # Knn
 neighbors = np.argsort(Dist, axis=1)[:, 1:k+1]
@@ -57,18 +82,25 @@ plt.figure(figsize=(8,6))
 if plot_mode == 'unweighted' or plot_mode == 'both':
     plt.scatter(embedding_A[:,0], embedding_A[:,1], color='red', label='Unweighted', s=60)
 if plot_mode == 'weighted' or plot_mode == 'both':
-    plt.scatter(embedding_W[:,0], embedding_W[:,1], color='blue', label='Weighted', s=60, marker='v')
+    plt.scatter(embedding_W[:,0], embedding_W[:,1], color='blue', label='Weighted', s=60, marker='o')
 
 # Add labels for clarity (use unweighted as reference)
 for i, label in enumerate(labels):
+    plot_shift = 0.5
     if plot_mode == 'unweighted' or plot_mode == 'both':
-        plt.text(embedding_A[i,0]+0.01, embedding_A[i,1]+0.01, label, fontsize=9)
+        plt.text(embedding_A[i,0]+plot_shift, embedding_A[i,1]+plot_shift, label, fontsize=9)
     if plot_mode == 'weighted' or plot_mode == 'both':
-        plt.text(embedding_W[i,0]+0.01, embedding_W[i,1]+0.01, label, fontsize=9)
+
+        plt.text(embedding_W[i,0]+plot_shift, embedding_W[i,1]+plot_shift, label, fontsize=9)
 
 plt.xlabel('Eigenvector 2')
 plt.ylabel('Eigenvector 3')
-plt.title(f'2D Laplacian Eigenmap ({k}-NN)')
+if plot_mode == 'weighted' or plot_mode == 'both':
+    plt.title(f'2D Laplacian Eigenmap ({k}-NN, T={T:,})')
+else:
+    plt.title(f'2D Laplacian Eigenmap ({k}-NN)')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+
