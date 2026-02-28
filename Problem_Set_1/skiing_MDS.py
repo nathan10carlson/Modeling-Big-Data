@@ -4,7 +4,7 @@ from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 
 # importing dataset
-skiing = pd.read_excel('data/skiing_dist.xlsx', index_col=0)
+skiing = pd.read_excel('../data/skiing_dist.xlsx', index_col=0)
 labels = skiing.index.to_numpy()
 print(skiing.head())   # first 5 rows
 print(skiing.shape)    # (rows, columns)
@@ -73,7 +73,6 @@ plt.scatter(V_tilde[0,:], V_tilde[1,:], color='blue')
 for i, label in enumerate(labels):
     offset = 2.5
     plt.text(V_tilde[0, i] + offset, V_tilde[1, i] + offset, label, fontsize=9)
-
 plt.xlabel("Dimension 1")
 plt.ylabel("Dimension 2")
 plt.title("2D MDS")

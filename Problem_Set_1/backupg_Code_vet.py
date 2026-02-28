@@ -41,7 +41,7 @@ DATASET_PATHS = {
     "90_150": "Case_Control_90_150.csv",
 }
 
-BASE_DIR = "~/Desktop/research/Diabetes prediction/Time_Segmented_Data"
+BASE_DIR = "/research/Diabetes prediction/Time_Segmented_Data"
 
 COLUMNS_TO_DROP = [
     "DW_PET_VST_ID",

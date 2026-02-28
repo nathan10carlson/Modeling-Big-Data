@@ -3,7 +3,7 @@ import numpy as np
 from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 
-data = loadmat("/Users/nathancarlson/Desktop/programs/MATH 532/data/cat_dogs.mat")
+data = loadmat("/programs/MATH 532/data/cat_dogs.mat")
 ## 4096 X 198
 print(data["Y"].shape)
 data = data["Y"]

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # Replace the next line with your own data loading.
 
 # load data
-data = loadmat("/Users/nathancarlson/Desktop/programs/MATH 532/data/cat_dogs.mat")
+data = loadmat("/programs/MATH 532/data/cat_dogs.mat")
 ## 4096 X 198
 matrix = data['Y']
 X = matrix.T
