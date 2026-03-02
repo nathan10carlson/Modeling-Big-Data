@@ -40,14 +40,14 @@ class distance_calculation_func():
     def geo_distance(self, X, Y):
         angles = angles_btwn_subspaces(X, Y)
         angles_squared = angles ** 2
-        geo_dist = np.sum(angles_squared)
-        return geo_dist
+        geo_dist_squared = np.sum(angles_squared)
+        return np.sqrt(geo_dist_squared)
 
     def chordal_distance(self, X, Y):
         angles = angles_btwn_subspaces(X, Y)
         sin_sqd = np.sin(angles) ** 2
-        chord_dist = np.sum(sin_sqd)
-        return chord_dist
+        chord_dist_squared = np.sum(sin_sqd)
+        return np.sqrt(chord_dist_squared)
 
     def Fubini_Study_distance(self, X, Y):
         angles = angles_btwn_subspaces(X, Y)
@@ -486,5 +486,6 @@ def classical_mds(Dist, d=2, labels=None, plot=True, figsize=(8, 6), point_color
 
     return configuration, eigvals
 
-def MDS_SUBSPACE_EMBEDDING(X_all):
+
+#def MDS_SUBSPACE_EMBEDDING(X_all):
     # I wil finsih this tomorrow. Think about if hyou want it to be split into samples already, or to pass in all the data
