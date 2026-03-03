@@ -23,7 +23,7 @@ def SVD_decompose(matrix):
     V = Vt.T
     return U, sing_vals, V
 
-def angles_btwn_subspaces(X, Y, column_mean_subt=False):
+def angles_btwn_subspaces(X, Y, column_mean_subt=True):
     if column_mean_subt == True:
         X = X - np.mean(X, axis=0)
     Q_x, R_x = QR_decompose(X)
