@@ -2,8 +2,19 @@ import functions as ABS
 import numpy as np
 np.random.seed(41)
 
+import pickle
 
-X = np.array([[2., 0.,1.,0.,1.],[1.,1.,0.,2.,1.],[10.,10.,770.,2.,1.]]).T
+load_path = r"/Users/nathancarlson/Desktop/research/Diabetes prediction/Angles_Btwn_Cases_Controls/data_list.pkl"
+
+with open(load_path, "rb") as f:
+    data_list = pickle.load(f)
+
+# Verify
+print("Cases sample shape:", data_list[0][1].shape)
+print("Controls sample shape:", data_list[1][1].shape)
+
+
+#X = np.array([[2., 0.,1.,0.,1.],[1.,1.,0.,2.,1.],[10.,10.,770.,2.,1.]]).T
 #Y = np.array([[2.,1.,1.,1.,1.],[1.,1.,1.,0.,1.]]).T
 #print('made it here')
 #data_w_labels = ABS.generate_toy_data_classes(num_classes=3, dimension=2, num_samples=4, noise_std=0.2)
