@@ -30,7 +30,7 @@ def angles_btwn_subspaces(X, Y, column_mean_subt=False):
     Q_y, R_y = QR_decompose(Y)
     R_SIG_S_tp = Q_x.T @ Q_y
     R, sing_vals, S = SVD_decompose(R_SIG_S_tp)
-    angles = np.arccos(sing_vals)  # returns radians
+    angles = np.arccos(np.clip(sing_vals, -1.0, 1.0))  # returns radians
     return angles
 
 class distance_calculation_func():
@@ -53,7 +53,7 @@ class distance_calculation_func():
         angles = angles_btwn_subspaces(X, Y)
         cos_angles = np.cos(angles)
         product = np.prod(cos_angles)
-        arc_cos_prod = np.arccos(product)  # this is distance
+        arc_cos_prod = np.arccos(np.clip(product, -1.0, 1.0))  # 🔹 clip here
         return arc_cos_prod
 
     def small_ang_pseudo_distance(self, X, Y):
@@ -62,8 +62,8 @@ class distance_calculation_func():
 
 
 # Practice from Kirby book
-X = np.array([[2., 0.,1.,0.,1.],[1.,1.,0.,2.,1.],[10.,10.,770.,2.,1.]]).T
-Y = np.array([[2.,1.,1.,1.,1.],[1.,1.,1.,0.,1.]]).T
+#X = np.array([[2., 0.,1.,0.,1.],[1.,1.,0.,2.,1.],[10.,10.,770.,2.,1.]]).T
+#Y = np.array([[2.,1.,1.,1.,1.],[1.,1.,1.,0.,1.]]).T
 #angles = angles_btwn_subspaces(X, Y)
 #print(angles)
 
@@ -81,7 +81,7 @@ def toy_data(dimension, num_samples,
     else:
         direction_vec = np.random.randn(dimension, 1)
 
-    scale = np.random.randn(num_samples, 1)
+    scale = np.random.randn(num_samples,1)
 
     # rank 1 sata
     data = scale @ direction_vec.T   # (num_samples, dimension)
@@ -97,7 +97,7 @@ def generate_toy_data_classes(num_classes, dimension, num_samples,
              manual_override=False,
              slope=None,
              y_intercept=None,
-             noise_std=None):
+             noise_std=0):
     data_plus_labels = []
     for i in range(num_classes):
         data, direction_vec = toy_data(dimension, num_samples,
@@ -151,13 +151,7 @@ def plot_toy_data_classes(data, title="Toy Data Classes"):
     plt.legend()
     plt.show()
 
-# Gen toy data
-data_w_labels = generate_toy_data_classes(num_classes=3, dimension=2, num_samples=4, noise_std=0.2)
-print(data_w_labels)
-# Plot
-plot_toy_data_classes(data_w_labels)
-
-import numpy as np
+# Gen toy dat
 
 def stack_data_and_labels(data_w_labels):
     """
@@ -191,11 +185,11 @@ def stack_data_and_labels(data_w_labels):
 
     return X_all, y_all
 
-X_all, y_all = stack_data_and_labels(data_w_labels)
+#X_all, y_all = stack_data_and_labels(data_w_labels)
 
-print("X_all shape:", X_all.shape)  # (num_classes*num_samples, dimension)
-print("y_all shape:", y_all.shape)  # (num_classes*num_samples,)
-print("Labels:", np.unique(y_all))
+#print("X_all shape:", X_all.shape)  # (num_classes*num_samples, dimension)
+#print("y_all shape:", y_all.shape)  # (num_classes*num_samples,)
+#print("Labels:", np.unique(y_all))
 
 
 def pca_from_scratch(X, n_components=None):
@@ -244,7 +238,7 @@ def pca_from_scratch(X, n_components=None):
 
     return X_pca, eigenvalues, eigenvectors, explained_var_ratio
 
-def plot_pca_and_energy(X, y, title="PCA from Scratch"):
+def plot_pca_and_energy(X, y, title="PCA Plot"):
     """
     Plot PCA first two components and explained variance (energy).
     """
@@ -373,10 +367,8 @@ def build_subspaces_fast(data_pts, sbspc_size, without_replace=False):
         subspace = data_pts[:, cols]
 
         subspaces.append(subspace)
-
+    print('Subspaces built')
     return subspaces
-
-import numpy as np
 
 def construct_dist_matrix(subspaces: np.ndarray, dist_type: str) -> np.ndarray:
     ## inputs as num_sub/samp, dim, sbs_sze
@@ -388,11 +380,13 @@ def construct_dist_matrix(subspaces: np.ndarray, dist_type: str) -> np.ndarray:
             f"subspaces must be 3D (n_subspaces, dim, k). "
             f"Got shape {subspaces.shape}")
 
+    distance_calculation = distance_calculation_func()
+
     distance_map = {
         "geodesic": distance_calculation.geo_distance,
         "chordal": distance_calculation.chordal_distance,
         "fubini_study": distance_calculation.Fubini_Study_distance,
-        "smallest_angle": distance_calculation.small_angle,
+        "smallest_angle": distance_calculation.small_ang_pseudo_distance,  # ✅ correct
     }
 
     if dist_type not in distance_map:
@@ -409,12 +403,13 @@ def construct_dist_matrix(subspaces: np.ndarray, dist_type: str) -> np.ndarray:
 
     return dist_matrix
 
-#sbspces = build_subspaces_fast(X, 10)
-#print(sbspces)
-
-def classical_mds(Dist, d=2, labels=None, plot=True, figsize=(8, 6), point_color='blue'):
+def classical_mds(Dist, d=2, labels=None, plot=True, figsize=(8, 6),
+                  label_fraction=0, random_seed=42,
+                  subspace_size=None, dist_type=None):
     """
-    Classical MDS (Torgerson/Gower) from a distance matrix.
+    Classical MDS (Torgerson/Gower) from a distance matrix with colored labels
+    and optional labeling of a fraction of points for traceability.
+    Title automatically includes dimension, subspace size, and distance type.
 
     Parameters
     ----------
@@ -423,21 +418,28 @@ def classical_mds(Dist, d=2, labels=None, plot=True, figsize=(8, 6), point_color
     d : int
         Target embedding dimension
     labels : list or np.ndarray
-        Optional labels for plotting
+        Optional labels for coloring points
     plot : bool
         Whether to generate a scatter plot
     figsize : tuple
         Figure size for plotting
-    point_color : str
-        Color for points in plot
+    label_fraction : float
+        Fraction of points to annotate with their label (0.0 to 1.0)
+    random_seed : int
+        Seed for reproducible random selection of points to label
+    subspace_size : int, optional
+        Subspace size (used in title)
+    dist_type : str, optional
+        Distance type (used in title)
 
     Returns
     -------
-    Y : np.ndarray
+    configuration : np.ndarray
         Embedded coordinates of shape (n_samples, d)
     eigvals : np.ndarray
         Eigenvalues of double-centered matrix
     """
+
     Dist = np.asarray(Dist)
     n = Dist.shape[0]
     if Dist.shape[0] != Dist.shape[1]:
@@ -468,19 +470,50 @@ def classical_mds(Dist, d=2, labels=None, plot=True, figsize=(8, 6), point_color
     # Step 5: compute configuration
     Lambda = np.diag(eigvals[:d])
     V = eigvecs[:, :d]
-    configuration = (V @ np.sqrt(Lambda))  # shape (n_samples, d)
+    configuration = V @ np.sqrt(Lambda)  # shape (n_samples, d)
 
     # Optional plotting
+    if configuration.shape[1] == 0:
+        print("Warning: No positive eigenvalues in classical MDS. Try increasing noise or adjusting subspace size.")
+        return configuration, eigvals
+
     if plot:
         plt.figure(figsize=figsize)
-        plt.scatter(configuration[:, 0], configuration[:, 1], color=point_color)
+
+        # Build dynamic title
+        title_parts = [f"{d}-D Classical MDS"]
+        if subspace_size is not None:
+            title_parts.append(f"Subspace size: {subspace_size}")
+        if dist_type is not None:
+            title_parts.append(f"Distance type: {dist_type}")
+        title = " | ".join(title_parts)
+
         if labels is not None:
-            for i, label in enumerate(labels):
-                plt.text(configuration[i, 0] + 0.02, configuration[i, 1] + 0.02, str(label), fontsize=9)
+            labels = np.array(labels)
+            unique_labels = np.unique(labels)
+            cmap = plt.get_cmap("tab10")  # up to 10 distinct colors
+
+            for i, ul in enumerate(unique_labels):
+                mask = labels == ul
+                plt.scatter(configuration[mask, 0], configuration[mask, 1],
+                            color=cmap(i % 10), alpha=0.7, label=f"Class {ul}")
+
+            # Annotate a fraction of points
+            np.random.seed(random_seed)
+            n_label_points = max(1, int(label_fraction * n))
+            chosen_indices = np.random.choice(n, n_label_points, replace=False)
+            for idx in chosen_indices:
+                plt.text(configuration[idx, 0] + 0.02, configuration[idx, 1] + 0.02,
+                         str(labels[idx]), fontsize=9)
+        else:
+            plt.scatter(configuration[:, 0], configuration[:, 1], color='blue', alpha=0.7)
+
         plt.xlabel("Dimension 1")
         plt.ylabel("Dimension 2")
-        plt.title(f"{d}-D Classical MDS")
+        plt.title(title)
         plt.grid(True)
+        if labels is not None:
+            plt.legend()
         plt.axis('equal')
         plt.show()
 
