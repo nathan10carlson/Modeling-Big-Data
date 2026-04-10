@@ -112,5 +112,3 @@ G_inv = np.linalg.pinv(G)
 print("A reconstruction error:", np.linalg.norm(A - U @ C @ G.T))
 print("B reconstruction error:", np.linalg.norm(B - V @ S @ G.T))
 print("CS identity error:", np.linalg.norm(C**2 + S**2 - np.eye(C.shape[0])))
-
-
