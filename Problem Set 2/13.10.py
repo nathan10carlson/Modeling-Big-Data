@@ -37,15 +37,13 @@ print(to_analyze.shape)
 
 flattened_data = to_analyze.reshape(145 * 145, 200)
 
-band = to_analyze[:, :, 24]   # shape (145,145)
+band = flattened_data  # shape (145,145)
 
 # =========================
 # Noise estimation
 # =========================
 shifted = np.roll(band, shift=1, axis=0)
-dx = band - shifted
-
-N = dx / np.sqrt(2)
+N = (band - shifted) / np.sqrt(2)
 
 plt.figure(figsize=(6, 6))
 plt.imshow(N, cmap='gray')

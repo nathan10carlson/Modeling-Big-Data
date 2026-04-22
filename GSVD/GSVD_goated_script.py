@@ -2,18 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 np.random.seed(42)
-A = np.random.rand(3,3)
-B = np.random.rand(3,3)
+A = np.random.rand(33,3)
+B = np.random.rand(34,3)
 rank_A = np.linalg.matrix_rank(A)
 rank_B = np.linalg.matrix_rank(B)
 
 
-def GSVD(A, B, thin = True):
+def GSVD(A, B, thin = True, print_dims = False):
     rank_A = np.linalg.matrix_rank(A)
     rank_B = np.linalg.matrix_rank(B)
     m = A.shape[0]
     n = A.shape[1]
     p = B.shape[0]
+    print('m=',m)
+    print('n=',n)
+    print('p=',p)
 
     M = np.concatenate((A, B), axis=0)
     k = np.linalg.matrix_rank(M)
@@ -38,19 +41,28 @@ def GSVD(A, B, thin = True):
 
     U, V, C, S, X = CSAlgorithm(Q_1_1, Q_2_1)
     G = np.hstack((W_1 @ Sigma_k @ X, W_2))
+    if print_dims:
+        print('m:', m)
+
     return U, V, C, S, G
 
 def CSAlgorithm(Q_1_1, Q_2_1):
     Flag = 0  # Default is Thin
 
     m, k = Q_1_1.shape
+    print('m=',m)
+    print('k=',k)
     p, _ = Q_2_1.shape
+    print('p=',p)
 
     if Flag == 0:  # thin
         U, C, Xt = np.linalg.svd(Q_1_1, full_matrices=False)
         C = np.diag(C)
         X = Xt.T
-        r = k - np.linalg.matrix_rank(np.diag(C))
+        c_vals = np.diag(C)
+        tol = 1e-10
+        r = np.sum(c_vals < tol)
+        print('r=',r)
 
         S = np.zeros((k, k))
         F = np.random.randn(p, r)
@@ -61,9 +73,11 @@ def CSAlgorithm(Q_1_1, Q_2_1):
         X = Xt.T
         S = np.zeros((p, k))
         r = k - np.linalg.matrix_rank(np.diag(C))
+        print('r=',r)
         F = np.random.randn(p, p - k + r)
 
     S_hat = np.zeros((k, k))
+
 
     Vp_list = []
 
@@ -81,6 +95,7 @@ def CSAlgorithm(Q_1_1, Q_2_1):
         Vp = np.zeros((p, 0))
 
     r = k - Vp.shape[1]
+    print('r=',r)
 
     if Flag == 0:
         F = np.random.randn(p, r)
@@ -98,6 +113,19 @@ def CSAlgorithm(Q_1_1, Q_2_1):
     else:
         OO = np.zeros((p - k, k))
         S = np.vstack((OO, S_hat))
+
+    c_hat = np.diag(C)
+    s_hat = np.diag(S)
+    s = (np.sum((1>np.diag(S)) & (np.diag(S)>0)))
+    print('s=',s)
+
+    print('s:',s)
+
+    print('pairs:')
+    for c, s in zip(c_hat, s_hat):
+        print(c, s)
+        check = c**2 + s**2
+        print(check)
 
     return U, V, C, S, X
 
