@@ -1,36 +1,61 @@
 from sparse_SVM_custom import Sparse_SVM
-from scipy.io import loadmat
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+from sklearn.svm import SVC
 
-plot_pca = False
 create_test_data = True
 load_data = True
-greedy_backward = False
-data_setname = 'b-cancer_data'
-C = 1
+run_standard_svm = True
+greedy_backward = True
+data_setname = 'cats_day_60_90'
+time_window = '(Day 60-90)'
 
-file_path = "/Users/nathancarlson/Desktop/programs/MATH 532/sparse_SVM/wisconsin_breast_cancer.mat"
+build_cumulative_model = True
+remove_glucose = True
+
+C = 1
+base_path = "/Users/nathancarlson/Desktop/programs/MATH 532/sparse_SVM/cat_data/day_60_90"
+
 
 if create_test_data:
-    data_mat = loadmat(file_path)
+    # load data
 
-    #print(data_mat.keys())
+    with open(f"{base_path}/cat_data_day_60_90.pkl", "rb") as f:
+        X = pickle.load(f)
+    print(X)
+    X_clean = [block[1] for block in X]
+    samples = np.vstack(X_clean)
+    print('x shape')
+    print(samples.shape)
+    y = np.concatenate([
 
-    #print(data_mat['feature_names'])
-    feature_names = data_mat['feature_names']
-    feature_names = np.array([f[0] for f in feature_names.flatten()])
+        np.full(X[i][1].shape[0], X[i][0])
 
+        for i in range(len(X))
 
-    samples = data_mat['X']
-    labels = data_mat['y']
-    labels = labels.reshape(-1, 1)
+    ])
+    print(y.shape)
+    with open(f"{base_path}/feature_names.pkl", "rb") as f:
+        feature_names = pickle.load(f)
+    feature_names = np.array(feature_names)
+
     # making all 0 labels 1
-    labels = np.where(labels == 0, -1, 1)
-    data = np.concatenate((samples, labels), axis=1)
+    print("raw labels:", np.unique(y))
+    y = np.where(y == 0, -1, 1)
+    y = y.reshape(-1, 1)
+    print("converted labels:", np.unique(y))
+    unique, counts = np.unique(y, return_counts=True)
+
+    print("label counts:")
+
+    for u, c in zip(unique, counts):
+        print(f"{u}: {c}")
+
+    data = np.concatenate((samples, y), axis=1)
+
+
 
     from sklearn.model_selection import train_test_split
     import numpy as np
@@ -39,7 +64,6 @@ if create_test_data:
     # Data
     # -----------------------------
     X = samples
-    y = labels.ravel()
 
     # -----------------------------
     # Train / Temp split (80 / 20)
@@ -48,6 +72,7 @@ if create_test_data:
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
+
     # -----------------------------
     # Split temp into val / test (50 / 50)
     # -> 10% val, 10% test total
@@ -55,6 +80,11 @@ if create_test_data:
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
     )
+
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
 
     # -----------------------------
     # Save everything
@@ -73,21 +103,21 @@ if load_data:
     data = np.load(f"{data_setname}.npz")
 
     X_train = data["X_train"]
-    y_train = data["y_train"]
+    y_train = data["y_train"].ravel()
 
     X_val = data["X_val"]
-    y_val = data["y_val"]
+    y_val = data["y_val"].ravel()
 
     X_test = data["X_test"]
-    y_test = data["y_test"]
+    y_test = data["y_test"].ravel()
 
     feature_names = data["feature_names"]
 
 # function takes in data (samples as rows) and labels as the last column
 train_data = np.concatenate((X_train, y_train.reshape(-1, 1)), axis=1)
 
-weights, bias = Sparse_SVM(train_data, C=C, plot_data_option=True)
-
+weights, bias = Sparse_SVM(train_data, C=C, plot_data_option=False)
+print('Sparse SVM Trained')
 # -----------------------------
 # Prediction function
 # -----------------------------
@@ -116,6 +146,7 @@ abs_weights = np.abs(weights)
 
 ## order features from greatest weight to least
 # sort indices (largest → smallest)
+## THESE ONLY COME FROM FIRST MODEL
 idx = np.argsort(abs_weights)[::-1]
 ordered_features = feature_names[idx]
 ordered_abs_weights = abs_weights[idx]
@@ -136,40 +167,6 @@ plt.plot(np.arange(1,len(ordered_abs_weights)+1, 1),ordered_abs_weights +1e-12)
 plt.title("Absolute Value of Feature Weights")
 plt.yscale('log')
 plt.show()
-
-if plot_pca:
-    # -----------------------------
-    # 1. Standardize features (VERY important for PCA)
-    # -----------------------------
-    X = samples
-    y = labels.ravel()
-
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # -----------------------------
-    # 2. Fit PCA
-    # -----------------------------
-    pca = PCA(n_components=2)  # 2D projection
-    X_pca = pca.fit_transform(X_scaled)
-
-    print("Explained variance ratio:", pca.explained_variance_ratio_)
-    print("Total variance captured:", np.sum(pca.explained_variance_ratio_))
-
-    # -----------------------------
-    # 3. Plot PCA projection
-    # -----------------------------
-    plt.figure()
-
-    plt.scatter(X_pca[y == -1, 0], X_pca[y == -1, 1], label="Class -1", alpha=0.5)
-    plt.scatter(X_pca[y == 1, 0], X_pca[y == 1, 1], label="Class +1", alpha=0.5)
-
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
-    plt.title("PCA Projection (2D)")
-    plt.legend()
-    plt.show()
-
 
 if greedy_backward:
     results = []
@@ -239,3 +236,100 @@ if greedy_backward:
         with open(f"{data_setname}_feature_elimination_log.pkl", "wb") as f:
             pickle.dump(results, f)
         print("Saved full elimination log (with cumulative features).")
+
+
+if run_standard_svm:
+    svm = SVC(
+        C=C,
+        kernel='linear'   # matches your linear Sparse_SVM
+    )
+
+    svm.fit(X_train, y_train)
+
+    y_train_pred = svm.predict(X_train)
+    y_val_pred   = svm.predict(X_val)
+    y_test_pred  = svm.predict(X_test)
+
+    train_acc = np.mean(y_train_pred == y_train)
+    val_acc   = np.mean(y_val_pred == y_val)
+    test_acc  = np.mean(y_test_pred == y_test)
+
+    print(f"Train Acc: {train_acc:.4f}")
+    print(f"Val Acc:   {val_acc:.4f}")
+    print(f"Test Acc:  {test_acc:.4f}")
+
+
+if build_cumulative_model:
+
+    with open(f"{data_setname}_feature_elimination_log.pkl", "rb") as f:
+        results = pickle.load(f)
+
+    # IMPORTANT: build ranking (best → worst)
+    ranked_features = results[-1]["cumulative_removed"][::-1]
+
+    if remove_glucose:
+        # REMOVE glucose BEFORE anything else
+        ranked_features = [f for f in ranked_features if f != "SC_GLUCOSE"]
+
+        print("Ranked features (best → worst, glucose removed):")
+        print(ranked_features)
+        time_window += ' (Glucose Dropped)'
+
+    ranked_features = ranked_features[::-1]
+
+    print("Ranked features (best → worst):")
+
+    print(ranked_features)
+
+    feature_to_idx = {f: i for i, f in enumerate(feature_names)}
+
+    selected_features = []
+    results_forward = []
+
+    # -----------------------------
+    # Forward construction
+    # -----------------------------
+    for k, feat in enumerate(ranked_features):
+        selected_features.append(feat)
+
+        idx = [feature_to_idx[f] for f in selected_features]
+
+        X_train_k = X_train[:, idx]
+        X_val_k = X_val[:, idx]
+
+        train_data_k = np.concatenate((X_train_k, y_train.reshape(-1, 1)), axis=1)
+
+        w, b = Sparse_SVM(train_data_k, C=C, plot_data_option=False)
+        w = np.array(w).flatten()
+
+        y_train_pred = predict(X_train_k, w, b)
+        y_val_pred = predict(X_val_k, w, b)
+
+        train_acc = np.mean(y_train_pred == y_train)
+        val_acc = np.mean(y_val_pred == y_val)
+
+        results_forward.append({
+            "k": k + 1,
+            "added_feature": feat,
+            "train_acc": train_acc,
+            "val_acc": val_acc
+        })
+
+        print(f"{k + 1:2d} | add {feat:20s} | val={val_acc:.4f}")
+
+    # -----------------------------
+    # PLOT ONCE (IMPORTANT FIX)
+    # -----------------------------
+    ks = [r["k"] for r in results_forward]
+    train_accs = [r["train_acc"] for r in results_forward]
+    val_accs = [r["val_acc"] for r in results_forward]
+
+    plt.figure()
+    #plt.plot(ks, train_accs, label="train")
+    plt.plot(ks, val_accs, label="Validation Accuracy")
+    plt.xlabel("Number of Features Added")
+    plt.ylabel("Accuracy")
+    plt.title(f"{time_window} (Greedy Additive SVM)")
+    plt.legend()
+    plt.grid()
+    plt.show()

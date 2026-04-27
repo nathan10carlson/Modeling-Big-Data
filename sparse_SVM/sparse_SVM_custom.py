@@ -4,12 +4,12 @@ import seaborn as sns
 from scipy.optimize import linprog
 import numpy as np
 
-
+'''
 # -----------------------------
 # generate data
 # -----------------------------
 plot_data_option = False
-toy_data_plot = False
+
 
 toy_data = gen_toy_data(40, 40, plot=plot_data_option)
 
@@ -27,8 +27,8 @@ C = 1
 
 X = toy_data[:, :-1]
 print(X)
-
-
+'''
+toy_data_plot = False
 # =========================================================
 # Sparse SVM FUNCTION (clean structure only)
 # =========================================================
@@ -164,3 +164,4 @@ if toy_data_plot:
     plt.legend()
     plt.grid(True)
     plt.show()
+
